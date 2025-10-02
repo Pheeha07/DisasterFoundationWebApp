@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            7.x
+            6.x
+
+      - name: Dotnet info
+        run: dotnet --info
+
+      - name: Restore
+        run: dotnet restore "GIFTOFTHEGIVERS.sln"
+
+      - name: Build
+        run: dotnet build "GIFTOFTHEGIVERS.sln" -c Release --no-restore
+
+      # If you add tests later, this will find and run them
+      - name: Test
+        run: dotnet test "GIFTOFTHEGIVERS.sln" -c Release --no-build --logger "trx;LogFileName=test_results.trx"
+        continue-on-error: false
+
+      - name: Publish web app
+        run: dotnet publish "GIFTOFTHEGIVERS.csproj" -c Release -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: drop
+          path: publish
